@@ -1,0 +1,86 @@
+Patch is merged upsteam:
+
+From: Bernhard Kaindl
+Date: Mon, 27 Mar 2023 15:17:49 +0200
+Subject: [PATCH 1/1] cmd/recv.c: Migrate from deprecated gethostbyname() to getaddrinfo()
+
+The Fedora review-tool runs rpmlint on the binary packages and warned
+that the uftrace tool was using gethostbyname. Switching to getaddrinfo
+helps to get accepted, also for later uftrace distro packaging reviews:
+
+POSIX.1-2008 removes the specifications of gethostbyname(), gethostbyaddr(),
+and h_errno, recommending the use of getaddrinfo(3) and getnameinfo(3) instead:
+
+They return a list of addrs or hostnames, are thread-safe and optionally
+allow us to also use IPv6. This 1st step continues with IPv4 and only
+still tries to connect to the primary, 1st address (for a small commit).
+
+diff --git a/cmds/recv.c b/cmds/recv.c
+--- a/cmds/recv.c
++++ b/cmds/recv.c
+@@ -46,7 +46,7 @@
+ 		pr_warn("socket setting failed\n");
+ 
+ 	if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+-		pr_err("socket bind failed");
++		pr_err("socket bind failed (port: %d)", opts->port);
+ 
+ 	if (listen(sock, 5) < 0)
+ 		pr_err("socket listen failed");
+@@ -81,25 +81,47 @@
+ 		.sin_family = AF_INET,
+ 		.sin_port = htons(opts->port),
+ 	};
+-	struct hostent *hostinfo;
++	struct addrinfo *results, hints;
++	int err;
+ 	int sock;
+ 	int one = 1;
+ 
+-	sock = socket(AF_INET, SOCK_STREAM, 0);
++	/*
++	 * Comment for the migration to use getaddrinfo()
++	 * in order to not use the deprecated gethostbyname():
++	 *
++	 * Next, we may want to loop over trying all addresses returned
++	 * by getaddrinfo(). (like in the example loops linked below)
++	 *
++	 * After this, the code could be made IPv4/IPv6-agnostic: For this,
++	 * we'd change sockaddr_in to sockaddr_storage, check ai_family,
++	 * and use AF_UNSPEC in place of AF_INET which will allow getaddrinfo()
++	 * to return IPv4 and IPv6 addrs. (and the server would be updated too)
++	 *
++	 * A very nice example is shown in the accepted answer and answer 8 here:
++	 * stackoverflow.com/questions/52727565/client-in-c-use-gethostbyname-or-getaddrinfo
++	 */
++	memset(&hints, 0, sizeof hints);
++	hints.ai_family = addr.sin_family;
++	hints.ai_socktype = SOCK_STREAM;
++	hints.ai_protocol = IPPROTO_TCP;
++
++	err = getaddrinfo(opts->host, NULL, &hints, &results);
++	if (err)
++		pr_err_ns("Failed to resolve host %s: %s\n", opts->host, gai_strerror(err));
++
++	addr.sin_addr = ((struct sockaddr_in *)results->ai_addr)->sin_addr;
++	freeaddrinfo(results);
++
++	sock = socket(hints.ai_family, hints.ai_socktype, 0);
+ 	if (sock < 0)
+ 		pr_err("socket create failed");
+ 
+ 	if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &one, sizeof(one)) != 0)
+ 		pr_warn("socket setting failed\n");
+ 
+-	hostinfo = gethostbyname(opts->host);
+-	if (hostinfo == NULL)
+-		pr_err("cannot find host: %s", opts->host);
+-
+-	addr.sin_addr = *(struct in_addr *)hostinfo->h_addr;
+-
+ 	if (connect(sock, (const struct sockaddr *)&addr, sizeof(addr)) < 0)
+-		pr_err("socket connect failed");
++		pr_err("socket connect failed (host: %s, port: %d)", opts->host, opts->port);
+ 
+ 	return sock;
+ }
