@@ -3,7 +3,7 @@
 %bcond_without   check
 Name:            uftrace
 Version:         0.13
-Release:         1%{?dist}
+Release:         2%{?dist}
 
 Summary:         Function (graph) tracer for user-space
 
@@ -57,8 +57,13 @@ sed -i 's|python$|python3|' tests/runtest.py
 %install
 %make_install V=1
 
-%if %{with check}
 %check
+./uftrace --version
+LD_LIBRARY_PATH=$PWD/libmcount ./uftrace record -A . -R . -P main ./uftrace
+./uftrace replay
+./uftrace dump
+./uftrace info
+%if %{with check}
 %ifarch aarch64
 # On fedora-rawhide-aarch64, all runtest test cases segfault with this backtrace:
 # WARN: [1] (ns::ns1::foo::foo[aaaae4170334] <= <61aaaae4170130>[61aaaae4170130])
