@@ -8,7 +8,7 @@
 %bcond_without   check
 Name:            uftrace
 Version:         0.13
-Release:         4%{?dist}
+Release:         5%{?dist}
 
 Summary:         Function (graph) tracer for user-space
 
@@ -57,8 +57,7 @@ sed -i 's|python$|python3|' tests/runtest.py
 
 %build
 unset CFLAGS CXXFLAGS LDFLAGS
-#configure
-./configure --prefix=%{_prefix}
+./configure --prefix=%{_prefix} --libdir=%{_libdir}
 %make_build
 %if %{with check}
 # build only here
