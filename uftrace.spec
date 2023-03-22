@@ -1,24 +1,22 @@
-# uftrace, especially on aarch64 is hurt by Fedora hardending flags:
-%undefine        _fortify_level
-%undefine        _hardened_build
-%undefine        _include_frame_pointers
-%undefine        _ld_as_needed
-# https://github.com/namhyung/uftrace/issues/1343
-%global          _lto_cflags %nil
 %bcond_without   check
 %bcond_without   python
 Name:            uftrace
 Version:         0.13.2
-Release:         7%{?dist}
+Release:         9%{?dist}
 
-Summary:         Function (graph) tracer for user-space
+Summary:         Function graph tracer for C/C++/Rust with many features
+# https://github.com/namhyung/uftrace/issues/1343
+%global          _lto_cflags %nil
+# These flags cause bugs (detected by the test suite):
+%undefine        _fortify_level
+%undefine        _hardened_build
+%undefine        _include_frame_pointers
 
 License:         GPL-2.0
-Group:           Development/Debuggers
 Url:             https://github.com/bernhardkaindl/uftrace
-Source:          %{name}-%{version}.tar.gz
+Source:          https://github.com/bernhardkaindl/%{name}/archive/v${version}/%{name}-%{version}.tar.gz
 
-ExclusiveArch:   x86_64 %ix86 aarch64
+ExclusiveArch:   x86_64 %ix86 %arm aarch64
 
 BuildRequires:   elfutils-devel
 %if "%{?toolchain}" == "clang"
@@ -50,7 +48,7 @@ BuildRequires:   /proc
 
 %description
 The uftrace tool is to trace and analyze execution of a program written in
-C/C++. It was heavily inspired by the ftrace framework of the Linux kernel
+C/C++/Rust. It was heavily inspired by the ftrace framework of the Linux kernel
 (especially function graph tracer) and supports userspace programs. It supports
 various kind of commands and filters to help analysis of the program execution
 and performance.
@@ -65,7 +63,7 @@ sed -i 's|python$|python3|' tests/runtest.py
 %if %{without python}
 conf_flags="--without-libpython"
 %endif
-./configure --prefix=%{_prefix} --libdir=%{_libdir} $conf_flags
+%configure $conf_flags
 %make_build
 %if %{with check}
 # build only here
@@ -74,6 +72,14 @@ conf_flags="--without-libpython"
 
 %install
 %make_install V=1
+%if %{with check}
+unset CFLAGS CXXFLAGS LDFLAGS
+make test V=1 2>&1 | tee test-report.txt
+%endif
+
+cd %{buildroot}
+mkdir -p                             .%{_datadir}/bash_completion
+mv .%{_sysconfdir}/bash_completion.d .%{_datadir}/bash_completion/completions
 
 %check
 export LD_LIBRARY_PATH=%{buildroot}%{_libdir}
@@ -82,10 +88,6 @@ export LD_LIBRARY_PATH=%{buildroot}%{_libdir}
 %{buildroot}%{_bindir}/uftrace replay
 %{buildroot}%{_bindir}/uftrace dump
 %{buildroot}%{_bindir}/uftrace info
-%if %{with check}
-unset CFLAGS CXXFLAGS LDFLAGS
-make test V=1
-%endif
 
 %files
 %{_bindir}/%{name}
@@ -94,10 +96,10 @@ make test V=1
 %if 0%{?have_pandoc}
 %{_mandir}/man1/*.1*
 %endif
-%{_sysconfdir}/bash_completion.d/%{name}
-%doc README.md
+%{_datadir}/bash_completion/completions/%{name}
+%doc README.md test-report.txt
 %license COPYING
 
 %changelog
-* Wed Mar 22 2023 Bernhard Kaindl <contact@bernhard.kaindl.dev> 0.13.2-7
+* Wed Mar 22 2023 Bernhard Kaindl <contact@bernhard.kaindl.dev> 0.13.2-9
 - Initial rpm for Fedora/CentOS/EPEL
