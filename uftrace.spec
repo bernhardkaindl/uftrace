@@ -9,16 +9,15 @@
 %bcond_without   python
 Name:            uftrace
 Version:         0.13.2
-Release:         7%{?dist}
+Release:         8%{?dist}
 
-Summary:         Function (graph) tracer for user-space
+Summary:         Function (graph) tracer for user-space.
 
 License:         GPL-2.0
-Group:           Development/Debuggers
 Url:             https://github.com/bernhardkaindl/uftrace
-Source:          %{name}-%{version}.tar.gz
+Source:          https://github.com/bernhardkaindl/%{name}/archive/v${version}/%{name}-%{version}.tar.gz
 
-ExclusiveArch:   x86_64 %ix86 aarch64
+ExclusiveArch:   x86_64 %ix86 %arm aarch64
 
 BuildRequires:   elfutils-devel
 %if "%{?toolchain}" == "clang"
@@ -65,7 +64,7 @@ sed -i 's|python$|python3|' tests/runtest.py
 %if %{without python}
 conf_flags="--without-libpython"
 %endif
-./configure --prefix=%{_prefix} --libdir=%{_libdir} $conf_flags
+%configure $conf_flags
 %make_build
 %if %{with check}
 # build only here
@@ -74,6 +73,9 @@ conf_flags="--without-libpython"
 
 %install
 %make_install V=1
+cd %{buildroot}
+mkdir -p                             .%{_datadir}/bash_completion
+mv .%{_sysconfdir}/bash_completion.d .%{_datadir}/bash_completion/completions
 
 %check
 export LD_LIBRARY_PATH=%{buildroot}%{_libdir}
@@ -94,7 +96,7 @@ make test V=1
 %if 0%{?have_pandoc}
 %{_mandir}/man1/*.1*
 %endif
-%{_sysconfdir}/bash_completion.d/%{name}
+%{_datadir}/bash_completion/completions/%{name}
 %doc README.md
 %license COPYING
 
