@@ -2,10 +2,13 @@
 %global          _lto_cflags %nil
 # uftrace is hurt by hardending flags:
 %undefine        _hardened_build
+%undefine        _fortify_level
+%undefine        _ld_as_needed
+%undefine        _include_frame_pointers
 %bcond_without   check
 Name:            uftrace
 Version:         0.13
-Release:         3%{?dist}
+Release:         4%{?dist}
 
 Summary:         Function (graph) tracer for user-space
 
@@ -17,7 +20,11 @@ Source:          %{name}-%{version}.tar.gz
 ExclusiveArch:   x86_64 %ix86 aarch64
 
 BuildRequires:   elfutils-devel
+%if "%{?toolchain}" == "clang"
+BuildRequires:   clang compiler-rt
+%else
 BuildRequires:   gcc-c++
+%endif
 BuildRequires:   libstdc++-devel
 BuildRequires:   make
 BuildRequires:   ncurses-devel
@@ -49,7 +56,9 @@ sed -i 's|test_unit|unittest|' Makefile
 sed -i 's|python$|python3|' tests/runtest.py
 
 %build
-%configure
+unset CFLAGS CXXFLAGS LDFLAGS
+#configure
+./configure --prefix=%{_prefix}
 %make_build
 %if %{with check}
 # build only here
@@ -57,9 +66,11 @@ sed -i 's|python$|python3|' tests/runtest.py
 %endif
 
 %install
+unset CFLAGS CXXFLAGS LDFLAGS
 %make_install V=1
 
 %check
+unset CFLAGS CXXFLAGS LDFLAGS
 ./uftrace --version
 LD_LIBRARY_PATH=$PWD/libmcount ./uftrace record -A . -R . -P main ./uftrace
 ./uftrace replay
