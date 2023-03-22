@@ -5,10 +5,13 @@
 %undefine        _fortify_level
 %undefine        _ld_as_needed
 %undefine        _include_frame_pointers
+%ifarch aarch64
+%undefine        optflags
+%endif
 %bcond_without   check
 Name:            uftrace
 Version:         0.13.2
-Release:         0%{?dist}
+Release:         1%{?dist}
 
 Summary:         Function (graph) tracer for user-space
 
@@ -57,7 +60,7 @@ sed -i 's|python$|python3|' tests/runtest.py
 
 %build
 unset CFLAGS CXXFLAGS LDFLAGS
-./configure --prefix=%{_prefix} --libdir=%{_libdir}
+%configure
 %make_build
 %if %{with check}
 # build only here
