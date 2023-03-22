@@ -1,9 +1,11 @@
 # https://github.com/namhyung/uftrace/issues/1343
 %global          _lto_cflags %nil
+# uftrace is hurt by hardending flags:
+%undefine        _hardened_build
 %bcond_without   check
 Name:            uftrace
 Version:         0.13
-Release:         2%{?dist}
+Release:         3%{?dist}
 
 Summary:         Function (graph) tracer for user-space
 
