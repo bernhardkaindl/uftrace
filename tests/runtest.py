@@ -628,8 +628,11 @@ class TestBase:
             return TestBase.TEST_DIFF_RESULT, dif
 
         if result_expect != result_tested:
-            result_expect = self.sort(self.fixup(cflags, self.result))
-            ret = TestBase.TEST_SUCCESS_FIXED
+            try:
+                result_expect = self.sort(self.fixup(cflags, self.result))
+                ret = TestBase.TEST_SUCCESS_FIXED
+            except IndexError:
+                return TestBase.TEST_DIFF_RESULT, "Internal error: Expected more results"
 
         if result_expect != result_tested:
             if diff:
