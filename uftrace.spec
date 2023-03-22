@@ -4,7 +4,7 @@
 %bcond_with      python
 Name:            uftrace
 Version:         0.13.2
-Release:         2%{?dist}
+Release:         3%{?dist}
 
 Summary:         Function (graph) tracer for user-space
 
@@ -34,6 +34,8 @@ BuildRequires:   pandoc
 %endif
 %if %{with python}
 BuildRequires:   python3-devel
+%else
+BuildRequires:   python3
 %endif
 %if %{with check}
 # segfaults without /proc
