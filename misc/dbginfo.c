@@ -85,7 +85,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	filename = argv[optind];
-
+	debug = 9;
+	// force=1;
+	dbg_domain[DBG_DWARF] = 9;
+	pr_dbg("hi");
+	puts("hi");
 	logfp = stderr;
 	outfp = stdout;
 
