@@ -1,14 +1,10 @@
 # https://github.com/namhyung/uftrace/issues/1343
 %global          _lto_cflags %nil
-# uftrace is hurt by hardending flags:
-%undefine        _hardened_build
-%undefine        _fortify_level
-%undefine        _ld_as_needed
-%undefine        _include_frame_pointers
 %bcond_without   check
+%bcond_with      python
 Name:            uftrace
 Version:         0.13.2
-Release:         0%{?dist}
+Release:         2%{?dist}
 
 Summary:         Function (graph) tracer for user-space
 
@@ -36,7 +32,9 @@ BuildRequires:   luajit-devel
 BuildRequires:   libunwind-devel
 BuildRequires:   pandoc
 %endif
+%if %{with python}
 BuildRequires:   python3-devel
+%endif
 %if %{with check}
 # segfaults without /proc
 BuildRequires:   /proc
@@ -50,14 +48,26 @@ various kind of commands and filters to help analysis of the program execution
 and performance.
 
 %prep
-%setup
+%setup -q
 # build only tests
 sed -i 's|test_unit|unittest|' Makefile
 sed -i 's|python$|python3|' tests/runtest.py
 
 %build
+# uftrace is hurt by hardending flags:
+%undefine        _hardened_build
+%undefine        _fortify_level
+%undefine        _ld_as_needed
+%undefine        _include_frame_pointers
+%ifarch aarch64
+%undefine        optflags
+%endif
+env | grep FLAGS
 unset CFLAGS CXXFLAGS LDFLAGS
-./configure --prefix=%{_prefix} --libdir=%{_libdir}
+%if %{without python}
+conf_flags="--without-libpython"
+%endif
+./configure --prefix=%{_prefix} --libdir=%{_libdir} $conf_flags
 %make_build
 %if %{with check}
 # build only here
@@ -76,14 +86,17 @@ LD_LIBRARY_PATH=$PWD/libmcount ./uftrace record -A . -R . -P main ./uftrace
 ./uftrace dump
 ./uftrace info
 %if %{with check}
+set -v
 make test V=1
 %endif
 
 %files
 %{_bindir}/%{name}
 %{_libdir}/libmcount*.so
+%if %{with python}
 %{_libdir}/uftrace_python.so
 %{_libdir}/uftrace.py
+%endif
 # man pages needs pandoc, which plain centos and rhel don't have:
 %if 0%{?fedora} > 35
 %{_mandir}/man1/*.1*
