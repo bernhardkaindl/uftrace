@@ -1,3 +1,4 @@
+# uftrace, especially on aarch64 is hurt by Fedora hardending flags:
 %undefine        _fortify_level
 %undefine        _hardened_build
 %undefine        _include_frame_pointers
@@ -8,7 +9,7 @@
 %bcond_without   python
 Name:            uftrace
 Version:         0.13.2
-Release:         4%{?dist}
+Release:         5%{?dist}
 
 Summary:         Function (graph) tracer for user-space
 
@@ -60,13 +61,6 @@ sed -i 's|test_unit|unittest|' Makefile
 sed -i 's|python$|python3|' tests/runtest.py
 
 %build
-# uftrace is hurt by hardending flags:
-%ifarch aarch64
-%undefine        optflags
-%undefine        build_cflags
-%undefine        build_cxxflags
-%endif
-env | grep FLAGS
 %if %{without python}
 conf_flags="--without-libpython"
 %endif
@@ -78,15 +72,15 @@ conf_flags="--without-libpython"
 %endif
 
 %install
-unset CFLAGS CXXFLAGS LDFLAGS
 %make_install V=1
 
 %check
-./uftrace --version
-LD_LIBRARY_PATH=$PWD/libmcount ./uftrace record -A . -R . -P main ./uftrace
-./uftrace replay
-./uftrace dump
-./uftrace info
+export LD_LIBRARY_PATH=%{buildroot}%{_libdir}
+%{buildroot}%{_bindir}/uftrace --version
+%{buildroot}%{_bindir}/uftrace record -A . -R . -P main ./uftrace
+%{buildroot}%{_bindir}/uftrace replay
+%{buildroot}%{_bindir}/uftrace dump
+%{buildroot}%{_bindir}/uftrace info
 %if %{with check}
 unset CFLAGS CXXFLAGS LDFLAGS
 make test V=1
