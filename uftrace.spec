@@ -1,8 +1,8 @@
 %bcond_without   check
 %bcond_without   python
 Name:            uftrace
-Version:         0.13.2
-Release:         9%{?dist}
+Version:         0.13
+Release:         11%{?dist}
 
 Summary:         Function graph tracer for C/C++/Rust with many features
 # https://github.com/namhyung/uftrace/issues/1343
@@ -13,8 +13,8 @@ Summary:         Function graph tracer for C/C++/Rust with many features
 %undefine        _include_frame_pointers
 
 License:         GPL-2.0
-Url:             https://github.com/bernhardkaindl/uftrace
-Source:          https://github.com/bernhardkaindl/%{name}/archive/v${version}/%{name}-%{version}.tar.gz
+Url:             https://github.com/namhyung/uftrace
+Source:          https://github.com/namhyung/%{name}/archive/v%{version}/%{name}-%{version}.tar.gz
 
 ExclusiveArch:   x86_64 %ix86 %arm aarch64
 
@@ -58,6 +58,7 @@ and performance.
 # build only tests
 sed -i 's|test_unit|unittest|' Makefile
 sed -i 's|python$|python3|' tests/runtest.py
+rm tests/t151_recv_runcmd.py # Fixed in git but can cause trouble in 0.13
 
 %build
 %if %{without python}
@@ -74,7 +75,10 @@ conf_flags="--without-libpython"
 %make_install V=1
 %if %{with check}
 unset CFLAGS CXXFLAGS LDFLAGS
-make test V=1 2>&1 | tee test-report.txt
+make test V=1 >test-report.txt 2>&1 &
+TEST=$?
+tail -f test-report.txt &
+wait $TEST
 %endif
 
 cd %{buildroot}
@@ -101,5 +105,5 @@ export LD_LIBRARY_PATH=%{buildroot}%{_libdir}
 %license COPYING
 
 %changelog
-* Wed Mar 22 2023 Bernhard Kaindl <contact@bernhard.kaindl.dev> 0.13.2-9
-- Initial rpm for Fedora/CentOS/EPEL
+* Wed Mar 22 2023 Bernhard Kaindl <contact@bernhard.kaindl.dev> 0.13-10
+- Initial rpm for Fedora and CentOS Stream
