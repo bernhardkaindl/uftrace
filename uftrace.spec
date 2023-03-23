@@ -1,8 +1,8 @@
 %bcond_without   check
 %bcond_without   python
 Name:            uftrace
-Version:         0.13.2
-Release:         9%{?dist}
+Version:         0.13
+Release:         10%{?dist}
 
 Summary:         Function graph tracer for C/C++/Rust with many features
 # https://github.com/namhyung/uftrace/issues/1343
@@ -13,8 +13,8 @@ Summary:         Function graph tracer for C/C++/Rust with many features
 %undefine        _include_frame_pointers
 
 License:         GPL-2.0
-Url:             https://github.com/bernhardkaindl/uftrace
-Source:          https://github.com/bernhardkaindl/%{name}/archive/v${version}/%{name}-%{version}.tar.gz
+Url:             https://github.com/namhyung/uftrace
+Source:          https://github.com/namhyung/%{name}/archive/v%{version}/%{name}-%{version}.tar.gz
 
 ExclusiveArch:   x86_64 %ix86 %arm aarch64
 
@@ -101,5 +101,5 @@ export LD_LIBRARY_PATH=%{buildroot}%{_libdir}
 %license COPYING
 
 %changelog
-* Wed Mar 22 2023 Bernhard Kaindl <contact@bernhard.kaindl.dev> 0.13.2-9
-- Initial rpm for Fedora/CentOS/EPEL
+* Wed Mar 22 2023 Bernhard Kaindl <contact@bernhard.kaindl.dev> 0.13-10
+- Initial rpm for Fedora and CentOS Stream
