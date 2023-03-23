@@ -1,0 +1,19 @@
+#
+# uftrace uses advanced methods for tracing and does not
+# support getting compiled as PIE. When forced, the test
+# suite shows regressions:
+#
+addFilter("position-independent-executable-suggested /usr/bin/uftrace")
+#
+# Suppress false positibe: The shared objects build by uftrace
+# are NOT shared libraries like rpmlint thinks: They are special
+# dynamically loaded modules used for advanced tracing:
+#
+addFilter("shared-library-without-dependency-information /usr/lib64/uftrace/libmcount-nop.so")
+#
+# Suppress false positive: uftrace as a tracing tool, it
+# contains the function signature of gethostbyname in order
+# to trace it's arguments when a traced program calls it,
+# but it does not have call gethostbyname():
+#
+addFilter("binary-or-shlib-calls-gethostbyname /usr/bin/uftrace")
